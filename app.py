@@ -1,7 +1,6 @@
 """
 Simulador de IPE por Cruzamento – Recife
 Versão Python com Streamlit + Folium
-
 Autor: Adaptado do HTML original
 Correção: Filtro de distância agora mantém a cobertura alvo
 """
@@ -676,42 +675,192 @@ with col_mapa:
     st_folium(mapa, width=None, height=520, returned_objects=[])
 
 with col_stats:
-    # --- BLOCO 1: ESTATÍSTICAS DOS EQUIPAMENTOS (NOVO) ---
+    
+    # --- LISTA DE ALAGAMENTOS (CONSTANTE) ---
+    ALAGAMENTOS_ALVO = [
+        "AVENIDA CRUZ CABUGA / AVENIDA DR JAYME DA FONTE",
+        "AVENIDA CRUZ CABUGA / AVENIDA NORTE MIGUEL ARRAES DE ALENCAR",
+        "RUA ARARIPINA / RUA DA AURORA",
+        "AVENIDA DANTAS BARRETO / RUA SÃO JOÃO",
+        "AVENIDA DANTAS BARRETO / RUA DO PEIXOTO",
+        "RUA CAPITÃO TEMUDO / PRAÇA GOVERNADOR PAULO GUERRA / AV. ENGENHEIRO JOSÉ ESTELITA",
+        "AVENIDA SUL GOV. CID SAMPAIO / RUA S D 4038",
+        "RUA ITAPIRA / RUA IMPERIAL",
+        "RUA DOS COELHOS / RUA DOUTOR JOSÉ MARIANO",
+        "RUA QUARENTA E OITO / AVENIDA NORTE MIGUEL ARRAES DE ALENCAR",
+        "RUA ARÃO BOTLER / AVENIDA CIDADE DE MONTEIRO",
+        "AVENIDA GOVERNADOR AGAMENON MAGALHÃES",
+        "RUA JOSÉ BENTO BATISTA / AVENIDA CORREIA DE BRITO",
+        "RUA DR BANDEIRA FILHO /AVENIDA GOVERNADOR AGAMENON MAGALHÃES",
+        "RUA DA MANGABEIRA / AVENIDA NORTE MIGUEL ARRAES DE ALENCAR",
+        "RUA IDA / AVENIDA NORTE MIGUEL ARRAES DE ALENCAR",
+        "AVENIDA DA RECUPERAÇÃO / ENTRADA COMPLEXO DA MACAXEIRA",
+        "RUA CERRO AZUL / RUA NOVA DESCOBERTA / RUA CÓRREGO DA AREIA",
+        "RUA DELMIRO GOUVEIA / AVENIDA ENGENHEIRO ABDIAS DE CARVALHO",
+        "RUA BENFICA / AVENIDA SPORT CLUBE DO RECIFE",
+        "RUA HÉRCULES FLORENCE / AVENIDA ENGENHEIRO ABDIAS DE CARVALHO",
+        "RUA AMÁLIA / AVENIDA GENERAL SAN MARTIN",
+        "RUA GOMES TABORDA / RUA QUATRO DE OUTUBRO",
+        "AVENIDA GENERAL SAN MARTIN / AVENIDA CAXANGÁ",
+        "RUA REAL DA TORRE / RUA PROFESSORA ANUNCIADA DA ROCHA MELO",
+        "AVENIDA PROFESSOR MORAES REGO / AVENIDA CAXANGÁ",
+        "AVENIDA BARÃO DE BONITO / AVENIDA CAXANGÁ",
+        "RUA BENFICA / PRAÇA DO INTERNACIONAL",
+        "AVENIDA ENGENHEIRO ABDIAS DE CARVALHO / AVENIDA GENERAL SAN MARTIN",
+        "AVENIDA SUL GOV. CID SAMPAIO / RUA NICOLAU PEREIRA",
+        "RUA NICOLAU PEREIRA / RUA DO ACRE",
+        "RUA VISCONDE DE PELOTAS / RUA VISCONDE DE INHAUMA",
+        "AVENIDA CENTRAL / RUA VISCONDE DE PELOTAS",
+        "AVENIDA JOÃO CABRAL DE MELO NETO / AVENIDA RECIFE",
+        "ENTRADA DA RUA DOUTOR JOSÉ RUFINO / AVENIDA DOUTOR JOSÉ RUFINO / RODOVIA BR 101",
+        "RUA DOMINGOS TEOTONIO /AVENIDA DOUTOR JOSÉ RUFINO",
+        "RUA JOÃO TEIXEIRA / AVENIDA DOUTOR JOSÉ RUFINO",
+        "RUA LORENA / RUA LEANDRO BARRETO",
+        "AVENIDA CONSELHEIRO AGUIAR / AVENIDA ANTÔNIO DE GOES",
+        "RUA ZEFERINO PINHO / RUA OLIVIA MENELAU",
+        "AVENIDA MARECHAL MASCARENHAS DE MORAES / RUA CÔNEGO LIRA",
+        "AVENIDA MARECHAL MASCARENHAS DE MORAES / RUA ANTÔNIO EDUARDO AMORIM",
+        "RUA PAMPULHA / AVENIDA MARECHAL MASCARENHAS DE MORAES",
+        "RUA ADERBAL DE MELO / AVENIDA RECIFE",
+        "RUA HÉLIO BRANDÃO / RUA SÃO NICOLAU",
+        "RUA PINTOR AGENOR DE ALBUQUERQUE CÉSAR / AVENIDA DOIS RIOS",
+        "RUA VISCONDE DE JEQUITINHONHA / RUA RIBEIRO DE BRITO",
+        "RUA AMÁLIA BERNARDINO DE SOUZA / RUA ERNESTO DE PAULA SANTOS",
+        "AVENIDA CONSELHEIRO AGUIAR / RUA PADRE CARAPUCEIRO",
+        "RUA PROFESSOR JOSÉ BRANDÃO / AVENIDA CONSELHEIRO AGUIAR"
+    ]
+
+    # --- LISTA DE SINISTROS (CONSTANTE) ---
+    RUAS_SINISTROS_ALVO = [
+        "AVENIDA ENGENHEIRO ABDIAS DE CARVALHO", "ESTRADA VELHA DE AGUA FRIA", "AVENIDA BRASILIA FORMOSA",
+        "AVENIDA MARECHAL MASCARENHAS DE MORAES", "RUA SAO MATEUS", "AVENIDA HERCULANO BANDEIRA",
+        "RUA EMILIO MONTEIRO FONSECA", "RUA PAISSANDU", "ESTRADA DE BELEM", "AVENIDA GOVERNADOR AGAMENON MAGALHAES",
+        "RUA SAO MIGUEL", "AVENIDA NORTE MIGUEL ARRAES DE ALENCAR", "RUA JOSE BONIFACIO", "PONTE GREGORIO BEZERRA",
+        "RUA SOUZA BANDEIRA", "RUA FALCAO DE LACERDA", "AVENIDA MAURICIO DE NASSAU", "RUA JOAO LIRA",
+        "AVENIDA PROFESSOR JOSE DOS ANJOS", "RUA GASTAO VIDIGAL", "AVENIDA DOUTOR JOSE RUFINO", "1A TRAVESSA SAO MIGUEL",
+        "AVENIDA ENGENHEIRO DOMINGOS FERREIRA", "RUA PROFESSOR ANTONIO COELHO", "RUA GENERAL JOAQUIM INACIO",
+        "RUA LEONARDO BEZERRA CAVALCANTI", "RUA JOAQUIM BANDEIRA", "PONTE GOVERNADOR PAULO GUERRA", "AVENIDA DOIS RIOS",
+        "RUA PRINCESA ISABEL", "AVENIDA RUI BARBOSA", "AVENIDA VISCONDE DE ALBUQUERQUE", "AVENIDA BOA VIAGEM",
+        "AVENIDA AFONSO OLINDENSE", "RUA DA HARMONIA", "AVENIDA RECIFE", "RUA ITAJAI", "RUA PEREIRA COUTINHO FILHO",
+        "RUA OLIVIA MENELAU", "RUA DE APIPUCOS", "RUA GASPAR PEREZ", "AVENIDA SUL GOVERNADOR CID SAMPAIO",
+        "RUA PADRE TEOFILO TWORZ", "RUA FLORIANO PEIXOTO", "RUA DONA JULIETA", "RUA GENERAL POLIDORO",
+        "RUA PROFESSOR AURELIO DE CASTRO CAVALCANTI", "RUA DEZ DE JULHO", "AVENIDA HILDEBRANDO DE VASCONCELOS",
+        "RUA CAPITAO ANTONIO MANHAES DE MATTOS", "AVENIDA GENERAL SAN MARTIN", "RUA GOMES TABORDA", "AVENIDA CRUZ CABUGA",
+        "RUA JOSE OSORIO", "AVENIDA DEZESSETE DE AGOSTO", "RUA BARAO DE SOUZA LEAO", "RUA VISCONDE DE JEQUITINHONHA",
+        "RUA FERNANDO CESAR", "RUA ALBERTO PAIVA", "AVENIDA MARIA IRENE", "RUA DESENHISTA EULINO SANTOS",
+        "AVENIDA GENERAL MAC ARTHUR", "RUA CAPITAO TEMUDO", "RUA RAUL POMPEIA", "RUA JOAQUIM NABUCO",
+        "VIADUTO PAPA JOAO PAULO II", "AVENIDA ARMINDO MOURA", "AVENIDA BEBERIBE SANTA CRUZ FUTEBOL CLUBE",
+        "PRACA DA REPUBLICA", "CAIS DE SANTA RITA", "RUA REAL DA TORRE", "RUA RIBEIRO DE BRITO", "RUA PADRE LEMOS",
+        "RUA DESEMBARGADOR MARTINS PEREIRA", "AVENIDA CONSELHEIRO AGUIAR", "AVENIDA CAXANGA", "AVENIDA DOM JOAO VI",
+        "AVENIDA DANTAS BARRETO", "PRACA DAS CINCO PONTAS", "RUA JUNDIA", "RUA JOAO IVO DA SILVA", "RUA EMILIANO BRAGA",
+        "ESTRADA DO BONGI ARMANDO DA FONTE", "AVENIDA CELSO FURTADO", "RUA BOLIVAR", "RUA CORONEL URBANO RIBEIRO DE SENA",
+        "RUA DA ENCOSTA", "RUA IMPERIAL", "RUA POTENGY", "RUA DONA BENVINDA DE FARIAS", "RUA BENFICA",
+        "CORREGO DO BARTOLOMEU", "AVENIDA PREFEITO ARTUR LIMA CAVALCANTI", "AVENIDA JOSE GONCALVES DE MEDEIROS",
+        "RUA SANTA EDWIRGES", "RUA RIO MARANHAO", "ESTRADA DO ARRAIAL", "VIADUTO ENGENHEIRO ANTONIO DE QUEIROZ GALVAO",
+        "AVENIDA JOAO DE BARROS", "AVENIDA JOAO CABRAL DE MELO NETO", "AVENIDA PROFESSOR LUIZ FREIRE", "RUA TABAIARES",
+        "RUA MANOEL DE BRITO", "RUA MANUEL DE BARROS LIMA", "AVENIDA INACIO MONTEIRO", "AVENIDA PRESIDENTE DUTRA",
+        "RUA AMELIA", "RUA PROFESSOR CHAVES BATISTA", "RUA TENENTE ROLAND RITTMISTER", "RUA CHA DE ALEGRIA",
+        "RUA ITACARI", "RUA GENERAL GOES MONTEIRO", "RUA JOAO DIAS MARTINS", "RUA GUANABARA", "ESTRADA DOS REMEDIOS",
+        "AVENIDA SERRA DA MANTIQUEIRA", "RUA DOIS IRMAOS", "RUA CORREGO DO EUCLIDES", "RUA DOM PAULO II",
+        "TRAVESSA DO RAPOSO", "PONTE MARECHAL HUMBERTO CASTELO BRANCO", "RUA CAPITAO ZUZINHA", "AVENIDA GUARARAPES",
+        "RUA CRUZEIRO DO FORTE", "RUA QUARENTA E OITO", "AVENIDA JORNALISTA COSTA PORTO", "RUA JACOB", "RUA DA SOLEDADE",
+        "AVENIDA SANTOS DUMONT", "RUA BOMBA DO HEMETERIO", "RUA CARLOS FERNANDES", "AVENIDA ENGENHEIRO JOSE ESTELITA",
+        "RUA SOUZA DE ANDRADE", "AVENIDA JOSE AMERICO DE ALMEIDA", "RUA CONEGO JOSE FERNANDES MACHADO",
+        "RUA MARECHAL DEODORO", "AVENIDA RIO LARGO", "RUA ALVARES DE AZEVEDO", "AVENIDA ENCANTA MOCA", "RUA MOTOCOLOMBO",
+        "TRAVESSA HERMILIO GOMES", "RUA SEBASTIAO MALTA ARCOVERDE", "RUA JACK AYRES", "RUA CATULO DA PAIXAO CEARENSE",
+        "RUA DA CONCORDIA", "RUA EXPEDICIONARIO TEODORO SATIVA", "PONTE DE AFOGADOS", "AVENIDA MANOEL GONCALVES DA LUZ",
+        "RUA FREI CASSIMIRO", "RUA VINTE E UM DE ABRIL", "AVENIDA DOM HELDER CAMARA", "RUA PROFESSOR AUGUSTO LINS E SILVA",
+        "RUA JOAO UZEDA LUNA", "RUA PARIS", "RUA JOAO TUDE DE MELO", "RUA SETUBAL", "RUA DO VEIGA", "RUA MANUEL DE MEDEIROS",
+        "PONTE VICE PRESIDENTE JOSE ALENCAR", "RUA DOS PALMARES", "RUA ALTO JOSE BONIFACIO", "RUA IMPERADOR DOM PEDRO II",
+        "PONTE JOSE DE BARROS LIMA", "ESTRADA DO FORTE DO ARRAIAL NOVO DO BOM JESUS", "RUA JERONIMO VILELA", "RUA DO SOL",
+        "RUA BARAO DE VERA CRUZ", "RUA JEAN EMILE FAVRE", "RUA DO HOSPICIO", "AVENIDA GOVERNADOR CARLOS DE LIMA CAVALCANTI",
+        "RUA BARAO DE MURIBECA", "RUA CONSELHEIRO PERETTI", "RUA ALEGRE", "RUA CONSELHEIRO PORTELA",
+        "AVENIDA CIDADE DE MONTEIRO", "RUA ARTHUR BRUNO SCHWAMBACH", "AVENIDA SPORT CLUBE DO RECIFE",
+        "RUA AMAURI DE MEDEIROS", "AVENIDA FLOR DE SANTANA", "RUA DO MACHADO", "RUA TREZE DE MAIO", "AVENIDA MARIO MELO",
+        "RUA OSCAR DE BARROS", "TRAVESSA DA RECUPERACAO", "RUA PROFESSOR JOAQUIM XAVIER DE BRITO", "ESTRADA DO ENCANAMENTO",
+        "AVENIDA SENADOR ROBERT KENNEDY", "RUA ONZE DE AGOSTO", "CANAL DO JORDAO", "RUA JOAO CARDOSO AIRES",
+        "RUA PROFESSOR JOSE AMARINO DOS REIS", "CAIS DO APOLO", "RUA REZENDE",
+        "AVENIDA DOUTOR DIRCEU VELLOSO TOSCANO DE BRITO", "AVENIDA PROFESSOR ESTEVAO FRANCISCO DA COSTA",
+        "AVENIDA DA RECUPERACAO", "RUA PADRE ROMA", "RUA PROFESSOR MARIO CASTRO", "RUA ANTONIO CURADO",
+        "AVENIDA VEREADOR OTACILIO AZEVEDO", "RUA BARAO DE ITAMARACA", "RUA ODORICO MENDES", "RUA DESEMBARGADOR LUIZ SALAZAR",
+        "RUA BARAO DE AGUA BRANCA", "PRACA MIGUEL DE CERVANTES", "AVENIDA REPUBLICA DO LIBANO", "RUA DA ESPERANCA",
+        "RUA SANTO ELIAS", "RUA IPOJUCA", "RUA CAMPOS TABAIARES", "RUA ERNESTO DE PAULA SANTOS", "AVENIDA LIBERDADE",
+        "RUA DAS MOCAS", "RUA SANT'ANNA", "VIADUTO PRESIDENTE TANCREDO NEVES", "RUA ITABORA",
+        "RUA PROFESSOR TRAJANO DE MENDONCA", "RUA MARCILIO DIAS", "RUA JOSE DE ALENCAR", "AVENIDA ESTANCIA",
+        "RUA FREI MATIAS TEVIS", "AVENIDA VISCONDE DE SUASSUNA", "RUA WILFRID RUSSEL SHORTO", "RUA AURORA CACOTE",
+        "RUA OCIDENTAL", "RUA DAS CREOULAS", "ESTRADA DO BARBALHO", "RUA ALBINO MEIRA", "RUA RIO TAPADO", "RUA DOM BOSCO",
+        "RUA DO PRINCIPE", "VIADUTO DAS CINCO PONTAS", "RUA ZUMBI DOS PALMARES", "RUA ROSARIO DA BOA VISTA",
+        "RUA PAULA BATISTA", "AVENIDA SAO PAULO", "RUA VASCO DA GAMA", "RUA CONSELHEIRO NABUCO", "PRACA DA RUA GOMES TABORDA",
+        "RUA ENGENHEIRO JOSE BRANDAO CAVALCANTE", "RUA CLOVIS BEVILAQUA", "PRACA DO ENTRONCAMENTO",
+        "AVENIDA PREFEITO LIMA CASTRO", "RUA DO ESPINHEIRO", "AVENIDA ANTONIO DE GOES", "RUA MARQUES AMORIM",
+        "RUA DA REGENERACAO", "RUA DOUTOR GASTAO DA SILVEIRA", "RUA CLAUDIO BROTHERHOOD", "AVENIDA JOAQUIM RIBEIRO",
+        "RUA MANOEL DE ALBUQUERQUE FERNANDES", "AVENIDA MILITAR", "RUA DOIS DE JULHO", "AVENIDA PROFESSOR ARTUR DE SA",
+        "RUA ROMULO PESSOA", "RUA COSME VIANA", "RUA HIPOLITO BRAGA", "PRACA ABELARDO RIJO", "RUA ESTADO DE ISRAEL",
+        "RUA ARQUITETO LUIZ NUNES", "RUA DAS CALCADAS", "RUA PASCOAL SIVINI", "AVENIDA CONDE DA BOA VISTA",
+        "AVENIDA MARTINS DE BARROS", "RUA PRESIDENTE HONORIO HERMETO", "RUA JAMAICA", "PONTE DO MOTOCOLOMBO",
+        "RUA DO FUTURO", "RUA JUNDIAI", "RUA DOS NAVEGANTES", "RUA DESEMBARGADOR OTILIO NEIVA", "AVENIDA CHAPADA DO ARARIPE",
+        "AVENIDA DOUTOR JAYME DA FONTE", "AVENIDA BEIRA RIO DEPUTADO OSVALDO COELHO", "RUA BALTAZAR PASSOS",
+        "RUA JACO VELOSINO", "AVENIDA CHAGAS FERREIRA", "RUA VALE DO ITAJAI", "RUA DOUTOR EUDES COSTA", "RUA EDSON ALVARES",
+        "AVENIDA IZABEL DE GOES", "RUA PAULINO DE FARIAS", "AVENIDA TAPAJOS", "RUA DONA MAGINA PONTUAL",
+        "2A TRAVESSA MARQUES DE BAIPENDI", "RUA SENADOR JOSE HENRIQUE", "RUA PARATIBE", "RUA FELIX DE BRITO E MELO",
+        "AVENIDA ANTONIO TORRES GALVAO", "RUA VIRGINIA LORETO", "RUA NOGUEIRA DE SOUZA", "RUA GALVAO RAPOSO",
+        "RUA COMENDADOR MORAIS", "RUA CARLOS GOMES", "RUA MARQUES DE MARICA", "RUA MARQUES DE BAIPENDI", "RUA CAMBOIM",
+        "AVENIDA MANOEL BORBA", "RUA PROFESSOR ARNALDO CARNEIRO LEAO", "RUA MINISTRO MARIO ANDREAZZA", "RUA RIO TOCANTINS",
+        "RUA VALE DO SIRIJI", "AVENIDA SEBASTIAO SALAZAR", "RUA PROFESSOR JOSE BRANDAO", "RUA COUTO MAGALHAES",
+        "RUA SA E SOUZA", "RUA HENRIQUE CAPITULINO", "RUA AGRICOLANDIA", "RUA CANAVIEIRA", "RUA AMARO COUTINHO",
+        "RUA DO PEIXOTO", "RUA SAO SEBASTIAO", "RUA DOUTOR CARLOS MAVIGNIER", "RUA CLARA", "RUA MARQUES DE VALENCA",
+        "RUA PROFESSOR JERONIMO GUEIROS", "RUA URIEL DE HOLANDA", "AVENIDA CENTENARIO ALBERTO SANTOS DUMONT",
+        "RUA DA AURORA", "RUA HONORIO CORREIA", "RUA DOUTOR ALVARO FERRAZ", "RUA BADEJO", "RUA TELES JUNIOR",
+        "RUA PINTOR ANTONIO ALBUQUERQUE", "RUA AMALIA BERNARDINO DE SOUZA", "RUA PRUDENTE DE MORAES", "RUA PADRE MIGUELINHO",
+        "RUA EVARISTO DA VEIGA", "RUA DO POMBAL", "CAIS DO PORTO DO RECIFE", "RUA QUITERIO INACIO DE MELO",
+        "RUA NOVA DESCOBERTA", "RUA JORNALISTA EDMUNDO BITTENCOURT", "RUA DOUTOR VICENTE GOMES", "LADEIRA DA COHAB",
+        "PONTE PRINCESA IZABEL", "RUA PADRE LANDIM", "RUA BLUMENAU", "AVENIDA PARNAMIRIM", "AVENIDA SATURNINO DE BRITO",
+        "AVENIDA CORREIA DE BRITO", "RUA RAIMUNDO FREIXEIRA", "RUA GERVASIO FIORAVANTE", "RUA GOIANESIA",
+        "PONTE ESTACIO COIMBRA", "RUA MARECHAL MANOEL LUIS OSORIO", "AVENIDA FERNANDO SIMOES BARBOSA",
+        "RUA MARQUES DO PARANA", "PRACA JORNALISTA FRANCISCO PESSOA DE QUEIROZ", "AVENIDA CONSELHEIRO ROSA E SILVA",
+        "RUA GUAIANAZES", "RUA NESTOR SILVA", "PONTE DO LIMOEIRO", "RUA CRISTOVAO JAQUES", "RUA MEM DE SA",
+        "RUA JOSE NATARIO", "RUA ANTONIO FALCAO", "RUA PAMPULHA", "RUA FRANCISCO ALVES", "RUA ALMIRANTE TAMANDARE",
+        "RUA DAS GRACAS", "RUA ALTO DO RESERVATORIO", "AVENIDA DONA CARENTINA", "TRAVESSA DO CAIS DA DETENCAO",
+        "AVENIDA DESEMBARGADOR GUERRA BARRETO", "AVENIDA DESEMBARGADOR JOSE NEVES", "PRACA DO DERBY",
+        "RUA DEMOCRITO DE SOUZA FILHO", "RUA PEDRO AFONSO", "AVENIDA CAMPO VERDE", "RUA JOAO FRANCISCO LISBOA",
+        "RUA DOUTOR GEORGE WILLIAM BUTLER", "RUA VALE DO CARIRI", "RUA TAQUARITINGA", "PRACA DA BANDEIRA",
+        "RUA PADRE CARAPUCEIRO", "RUA SARGENTO SILVINO MACEDO", "RUA MAURICEIA", "RUA DA FELICIDADE", "RUA SANTA CECILIA",
+        "RUA FARIAS NEVES", "RUA BELA VISTA", "AVENIDA PROFESSOR JOAO MEDEIROS", "RUA PADRE DEHON",
+        "RUA COMENDADOR BENTO AGUIAR", "RUA DOS COELHOS", "RUA HELIO BRANDAO", "RUA DESEMBARGADOR GOIS CAVALCANTE",
+        "RUA DA GUIA", "RUA LEANDRO BARRETO", "RUA JOSE DOMINGUES DA SILVA", "RUA ANDRE BEZERRA", "RUA MARAGOGI",
+        "RUA ISAAC MARKMAN", "RUA DOS PRAZERES", "RUA RIO XINGU", "RUA NOSSA SENHORA DA SAUDE", "RUA DAS NINFAS",
+        "RUA ERNANI BRAGA", "AVENIDA DOZE DE JUNHO", "RUA PROFESSOR FRANCISCO DA TRINDADE", "RUA DELMIRO GOUVEIA",
+        "RUA VISCONDE DE CAIRU", "RUA OUREM", "RUA ARTUR COUTINHO", "RUA RIBEIRO PESSOA", "RUA PROFESSORA ROSILDA COSTA",
+        "RUA DOM MANOEL DA COSTA", "RUA DE SANTA RITA", "RUA SETE PECADOS", "PRACA GENERAL ABREU E LIMA",
+        "RUA DOUTOR JOAO ELISIO", "RUA DA SANTA CRUZ", "AVENIDA RAIMUNDO DINIZ", "RUA OSCAR PINTO", "RUA S D 9806",
+        "RUA TEOLANDIA", "RUA JOAO FERNANDES VIEIRA", "RUA PREFEITO JORGE MARTINS", "RUA REGUEIRA COSTA", "RUA PIRACANJUBA",
+        "AVENIDA SANTA FE", "AVENIDA BARBOSA LIMA", "RUA ADERBAL DE MELO", "RUA ANITA",
+        "RUA DEPUTADO JOSE FRANCISCO DE MELO CAVALCANTI", "RUA FRANKLIN TAVORA", "RUA EDUARDO JORGE",
+        "RUA ACADEMICO HELIO RAMOS", "RUA GOUVEIA DE BARROS", "RUA DA UNIAO", "RUA CONEGO BARATA", "PRACA FARIAS NEVES",
+        "RUA PADRE CABRAL", "RUA TRES DE AGOSTO", "RUA TOME GIBSON", "RUA PETRONILA BOTELHO", "RUA CAFESOPOLIS",
+        "RUA SANTOS ARAUJO", "RUA FONSECA OLIVEIRA"
+    ]
+
+    # --- BLOCO 1: ESTATÍSTICAS DOS EQUIPAMENTOS ---
     if not st.session_state.equipamentos.empty:
         
         # 1. FILTRO GERAL
         df_full = st.session_state.equipamentos
         df_eq = df_full[df_full['peso'] >= nota_min_equip].copy()
         
-        # Total filtrado (para referência)
+        # Total filtrado
         total_filtrado = len(df_eq)
         
-        # 2. Tratamento Específico para Agrupamento (Semelhantes)
-        # Primeiro extrai a primeira palavra
+        # 2. Tratamentos
         df_eq['primeira_palavra'] = df_eq['tipo'].astype(str).apply(lambda x: x.split(' ')[0] if len(x) > 0 else "Outros")
         
-        # Dicionário de Renomeação (Mapeamento solicitado)
         mapa_semelhantes = {
-            "2ª": "2ª Jardim",
-            "Primeira": "Parque",
-            "Maria": "Rua",
-            "Skate,": "Skatepark",
-            "3ª": "3ª Jardim",
-            "1º": "1ª Jardim",
-            "Administração": "Pátio",
-            "AVENIDA": "AVENIDA",
-            "CAIXA": "Caixa Cultural",
-            "Casa": "Casa dos Patrimônios",
-            "Novo": "Skatepark",
-            "ANTIGO": "Hotel",
-            "CASA": "Casa da Cultura",
-            "BURACO": "Praia",
-            "POLO": "Polo",
-            "Numa": "Rua",
-            "PARQUE": "Parque"
+            "2ª": "2ª Jardim", "Primeira": "Parque", "Maria": "Rua", "Skate,": "Skatepark",
+            "3ª": "3ª Jardim", "1º": "1ª Jardim", "Administração": "Pátio", "AVENIDA": "AVENIDA",
+            "CAIXA": "Caixa Cultural", "Casa": "Casa dos Patrimônios", "Novo": "Skatepark",
+            "ANTIGO": "Hotel", "CASA": "Casa da Cultura", "BURACO": "Praia", "POLO": "Polo",
+            "Numa": "Rua", "PARQUE": "Parque"
         }
-        
-        # Aplica o mapeamento. Se a palavra não estiver no dicionário, mantém a original.
         df_eq['agrupado'] = df_eq['primeira_palavra'].apply(lambda x: mapa_semelhantes.get(x, x))
         
         # 3. Contagens
@@ -719,16 +868,9 @@ with col_stats:
         contagem_agrupada = df_eq['agrupado'].value_counts()
         contagem_pesos = df_eq['peso'].value_counts().sort_index(ascending=False)
         
-        # --- Mapeamento de Labels de Prioridade ---
-        labels_prioridade = {
-            5: "Alta Prioridade",
-            3: "Média Prioridade",
-            1: "Baixa Prioridade"
-        }
+        labels_prioridade = {5: "Alta Prioridade", 3: "Média Prioridade", 1: "Baixa Prioridade"}
 
-        # --- Gerar HTMLs ---
-        
-        # Tabela 1: Tipos (SEM PORCENTAGEM)
+        # HTML Generators
         html_tipos = ""
         if not contagem_tipos.empty:
             for nome, qtd in contagem_tipos.items():
@@ -737,7 +879,6 @@ with col_stats:
         else:
             html_tipos = '<div class="stat-row"><span>Nenhum equipamento.</span></div>'
 
-        # Tabela 2: Semelhantes (SEM PORCENTAGEM, COM NOMES ALTERADOS)
         html_agrupada = ""
         if not contagem_agrupada.empty:
             for nome, qtd in contagem_agrupada.items():
@@ -746,50 +887,34 @@ with col_stats:
         else:
             html_agrupada = '<div class="stat-row"><span>Nenhum agrupamento.</span></div>'
 
-        # Tabela 3: Prioridade (100% FIXO)
         html_prioridade = ""
         if not contagem_pesos.empty:
             for peso, qtd in contagem_pesos.items():
-                pct = 100.0  # Fixo conforme solicitado
-                
-                try:
-                    peso_key = int(peso)
-                except:
-                    peso_key = peso
-                
+                pct = 100.0
+                try: peso_key = int(peso)
+                except: peso_key = peso
                 label_final = labels_prioridade.get(peso_key, f"Prioridade {peso_key}")
-                
                 html_prioridade += f'<div class="stat-row"><span>{label_final}:</span><span class="stat-value">{qtd} <small style="font-size:0.75em; opacity:0.8">({pct:.1f}%)</small></span></div>'
         else:
             html_prioridade = '<div class="stat-row"><span>Nenhum encontrado</span></div>'
 
-        # === EXIBIÇÃO VISUAL ===
-        
-        # Tabela 1: Equipamentos (COM SCROLL)
+        # VISUALIZAÇÃO
         st.markdown(f"#### 🏢 Equipamentos (Nota ≥ {nota_min_equip})")
         st.markdown(f"""<div class="stat-box" style="margin-bottom: 1rem;">
-            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">
-                {html_tipos}
-            </div>
+            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">{html_tipos}</div>
             <div class="stat-row" style="border-top: 1px solid rgba(148, 163, 184, 0.3); margin-top: 5px; padding-top: 5px;">
                 <span><b>Total Filtrado:</b></span><span class="stat-value">{total_filtrado}</span>
             </div>
         </div>""", unsafe_allow_html=True)
 
-        # Tabela 2: Semelhantes (COM SCROLL)
         st.markdown("#### 📑 Contagem de Semelhantes")
         st.markdown(f"""<div class="stat-box" style="margin-bottom: 1rem;">
-            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">
-                {html_agrupada}
-            </div>
+            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">{html_agrupada}</div>
         </div>""", unsafe_allow_html=True)
 
-        # Tabela 3: Prioridade (COM SCROLL)
         st.markdown("#### ⚖️ Quantidade por Prioridade")
         st.markdown(f"""<div class="stat-box" style="margin-bottom: 1rem;">
-             <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">
-                {html_prioridade}
-            </div>
+             <div style="max-height: 150px; overflow-y: auto; padding-right: 5px;">{html_prioridade}</div>
         </div>""", unsafe_allow_html=True)
 
     # --- BLOCO 2: ESTATÍSTICAS DOS CRUZAMENTOS ---
@@ -822,7 +947,54 @@ with col_stats:
         custo_total = qtd_ptz*preco_ptz + qtd_360*preco_360 + qtd_fixa*preco_fixa + qtd_lpr*preco_lpr
         total_cams = qtd_ptz + qtd_360 + qtd_fixa + qtd_lpr
         
-        # Exibir estatísticas
+        # --- 1. VERIFICAÇÃO DE ALAGAMENTOS ---
+        alagamentos_encontrados = []
+        if not df_sel.empty:
+            lista_alvo_norm = [x.strip().upper() for x in ALAGAMENTOS_ALVO]
+            for idx, row in df_sel.iterrows():
+                l1 = str(row['log1']).strip().upper()
+                l2 = str(row['log2']).strip().upper()
+                comb1 = f"{l1} / {l2}"
+                comb2 = f"{l2} / {l1}"
+                if comb1 in lista_alvo_norm:
+                    alagamentos_encontrados.append(comb1)
+                elif comb2 in lista_alvo_norm:
+                    alagamentos_encontrados.append(comb2)
+        
+        html_alagamentos = ""
+        if alagamentos_encontrados:
+            for alag in alagamentos_encontrados:
+                html_alagamentos += f'<div class="stat-row" style="justify-content: flex-start;"><span style="color:#fbbf24;">⚠️ {alag}</span></div>'
+        else:
+            html_alagamentos = '<div class="stat-row"><span>Nenhum ponto de alagamento nos filtros atuais.</span></div>'
+
+        # --- 2. VERIFICAÇÃO DE SINISTROS ---
+        sinistros_encontrados = []
+        
+        if not df_sel.empty:
+            lista_sinistros_norm = set([x.strip().upper() for x in RUAS_SINISTROS_ALVO])
+            ruas_unicas_encontradas = set()
+            
+            for idx, row in df_sel.iterrows():
+                l1 = str(row['log1']).strip().upper()
+                l2 = str(row['log2']).strip().upper()
+                
+                if l1 in lista_sinistros_norm:
+                    ruas_unicas_encontradas.add(l1)
+                
+                if l2 in lista_sinistros_norm:
+                    ruas_unicas_encontradas.add(l2)
+            
+            sinistros_encontrados = sorted(list(ruas_unicas_encontradas))
+
+        html_sinistros = ""
+        if sinistros_encontrados:
+            for rua in sinistros_encontrados:
+                html_sinistros += f'<div class="stat-row" style="justify-content: flex-start;"><span style="color:#f87171;">🚗 {rua}</span></div>'
+        else:
+            html_sinistros = '<div class="stat-row"><span>Nenhuma rua com histórico de sinistros.</span></div>'
+
+        # EXIBIÇÃO CRUZAMENTOS
         st.markdown("#### 📊 Cruzamentos (Simulação)")
         limite_str = f'<div class="stat-row"><span>Limite máximo:</span><span class="stat-value">{max_cruzamentos:,}</span></div>' if max_cruzamentos else ''
         st.markdown(f"""<div class="stat-box">
@@ -831,6 +1003,28 @@ with col_stats:
             {limite_str}
             <div class="stat-row"><span>Cobertura alvo:</span><span class="stat-value">{cobertura_pct}%</span></div>
             <div class="stat-row"><span>Cobertura real:</span><span class="stat-value" style="color: {'#4ade80' if alvo_atingido else '#fbbf24'};">{cobertura_real*100:.1f}%</span></div>
+        </div>""", unsafe_allow_html=True)
+        
+        # ALAGAMENTOS
+        st.markdown("#### 🌊 Pontos de Alagamento")
+        st.markdown(f"""<div class="stat-box" style="margin-bottom: 1rem;">
+            <div class="stat-row" style="border-bottom: 1px solid rgba(148, 163, 184, 0.3); padding-bottom: 5px; margin-bottom: 5px;">
+                <span><b>Cruzamentos Críticos:</b></span><span class="stat-value">{len(alagamentos_encontrados)}</span>
+            </div>
+            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px; font-size: 0.75rem;">
+                {html_alagamentos}
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+        # SINISTROS
+        st.markdown("#### 🚗 Ruas com Histórico de Sinistros")
+        st.markdown(f"""<div class="stat-box" style="margin-bottom: 1rem;">
+            <div class="stat-row" style="border-bottom: 1px solid rgba(148, 163, 184, 0.3); padding-bottom: 5px; margin-bottom: 5px;">
+                <span><b>Ruas com Sinistros:</b></span><span class="stat-value">{len(sinistros_encontrados)}</span>
+            </div>
+            <div style="max-height: 150px; overflow-y: auto; padding-right: 5px; font-size: 0.75rem;">
+                {html_sinistros}
+            </div>
         </div>""", unsafe_allow_html=True)
         
         st.markdown("#### 📈 Cobertura por Eixo")
